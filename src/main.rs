@@ -1,5 +1,6 @@
 use std::net::SocketAddr;
 
+use env_logger::Env;
 use hyper::{
     service::{make_service_fn, service_fn},
     Body, Client, Error, Request, Response, Server,
@@ -21,7 +22,12 @@ async fn proxy(req: Request<Body>) -> Result<Response<Body>, Error> {
 
 #[tokio::main]
 async fn main() {
-    env_logger::init();
+    #[cfg(debug_assertions)]
+    const LOG_LEVEL: &str = "debug";
+    #[cfg(not(debug_assertions))]
+    const LOG_LEVEL: &str = "info";
+
+    env_logger::init_from_env(Env::default().default_filter_or(LOG_LEVEL));
     info!("`env_logger` initialized");
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
