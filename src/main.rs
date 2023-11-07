@@ -1,23 +1,25 @@
-use std::{convert::Infallible, net::SocketAddr};
+use std::net::SocketAddr;
 
 use hyper::{
     service::{make_service_fn, service_fn},
-    Body, Request, Response, Server,
+    Body, Client, Error, Request, Response, Server,
 };
 
-async fn hello_world(_req: Request<Body>) -> Result<Response<Body>, Infallible> {
-    Ok(Response::new("Hello, World".into()))
+async fn proxy(req: Request<Body>) -> Result<Response<Body>, Error> {
+    dbg!(&req);
+
+    let client = Client::new();
+
+    Ok(client.request(req).await?)
 }
 
 #[tokio::main]
 async fn main() {
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
-
-    let make_svc = make_service_fn(|_conn| async { Ok::<_, Infallible>(service_fn(hello_world)) });
-
+    let make_svc = make_service_fn(|_conn| async { Ok::<_, Error>(service_fn(proxy)) });
     let server = Server::bind(&addr).serve(make_svc);
 
     if let Err(e) = server.await {
-        eprintln!("server error: {}", e);
+        eprintln!("server error: {e}");
     }
 }
